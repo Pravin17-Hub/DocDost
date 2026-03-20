@@ -25,12 +25,13 @@ files.filter(f => f.endsWith('.tsx') || f.endsWith('.ts')).forEach(file => {
   let original = content;
 
   // Replace double quotes
-  content = content.replace(/"http:\/\/localhost:5000([^"]*)"/g, '`${process.env.NEXT_PUBLIC_API_URL}$1`');
-  // Replace single quotes
-  content = content.replace(/'http:\/\/localhost:5000([^']*)'/g, '`${process.env.NEXT_PUBLIC_API_URL}$1`');
-  // Replace backticks
-  content = content.replace(/`http:\/\/localhost:5000([^`]*)`/g, '`${process.env.NEXT_PUBLIC_API_URL}$1`');
+content = content.replace(/"http:\/\/localhost:5000([^"]*)"/g, '`' + '${process.env.NEXT_PUBLIC_API_URL}$1' + '`');
 
+// Replace single quotes
+content = content.replace(/'http:\/\/localhost:5000([^']*)'/g, '`' + '${process.env.NEXT_PUBLIC_API_URL}$1' + '`');
+
+// Replace backticks
+content = content.replace(/`http:\/\/localhost:5000([^`]*)`/g, '`' + '${process.env.NEXT_PUBLIC_API_URL}$1' + '`');
   if (content !== original) {
     fs.writeFileSync(file, content);
     console.log("Updated: " + file);
