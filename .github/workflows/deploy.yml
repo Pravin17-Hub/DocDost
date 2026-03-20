@@ -1,0 +1,38 @@
+name: DocDost CI/CD
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20.x
+        cache: 'npm'
+        
+    - name: Install dependencies (Backend)
+      working-directory: ./backend
+      run: npm ci
+        
+    - name: Install dependencies (Frontend)
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Build Frontend
+      working-directory: ./frontend
+      run: npm run build
+
+    - name: Build Backend docker image
+      run: docker build -t docdost/backend:latest ./backend
+      
+    - name: Build Frontend docker image
+      run: docker build -t docdost/frontend:latest ./frontend
