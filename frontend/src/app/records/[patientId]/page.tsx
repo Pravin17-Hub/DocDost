@@ -24,14 +24,14 @@ export default function PatientRecordsPage() {
       }
 
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/records/patient/${patientId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+      const res = await fetch(
+  `${process.env.NEXT_PUBLIC_API_URL}/api/records/patient/${patientId}`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
 
         const data = await res.json();
         setRecords(Array.isArray(data) ? data : []);
