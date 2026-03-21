@@ -3,7 +3,7 @@ import { register, login } from "../controllers/authController";
 
 const router = express.Router();
 
-// ✅ CORRECT ROUTES
+// ✅ Correct routes
 router.post("/register", register);
 router.post("/login", login);
 

@@ -91,7 +91,6 @@ export const enableMfa = async (req: any, res: Response) => {
       where: { id: userId },
       data: { twoFactorEnabled: true, twoFactorSecret: mockSecret }
     });
-
     res.json({ message: 'MFA Enabled', secret: mockSecret });
   } catch (error) {
     res.status(500).json({ error: 'Failed to enable MFA' });
