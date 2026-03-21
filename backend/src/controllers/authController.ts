@@ -40,6 +40,7 @@ export const register = async (req: Request, res: Response) => {
 
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
+    console.error("REGISTER ERROR:", error);
     res.status(500).json({ error: 'Registration failed' });
   }
 };
@@ -91,6 +92,7 @@ export const enableMfa = async (req: any, res: Response) => {
       where: { id: userId },
       data: { twoFactorEnabled: true, twoFactorSecret: mockSecret }
     });
+
     res.json({ message: 'MFA Enabled', secret: mockSecret });
   } catch (error) {
     res.status(500).json({ error: 'Failed to enable MFA' });
