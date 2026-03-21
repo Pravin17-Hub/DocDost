@@ -7,6 +7,12 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, role, name, specialization } = req.body;
 
+if (!email || !password || !name || !role) {
+  return res.status(400).json({ error: "Missing required fields" });
+}
+
+// 🔥 FIX ROLE FORMAT
+const formattedRole = role.toUpperCase();
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
@@ -15,22 +21,22 @@ export const register = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
-      data: {
-        email,
-        name,
-        password: hashedPassword,
-        role,
-      },
-    });
+  data: {
+    email,
+    name,
+    password: hashedPassword,
+    role: formattedRole, // ✅ FIXED
+  },
+});
 
-    if (role === 'DOCTOR') {
+    if (formattedRole === 'DOCTOR') {
       await prisma.doctor.create({
         data: {
           userId: user.id,
           specialization: specialization || 'General',
         },
       });
-    } else if (role === 'PATIENT') {
+    } else if (formattedRole === 'PATIENT') {
       await prisma.patient.create({
         data: {
           userId: user.id,

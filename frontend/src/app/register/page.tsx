@@ -23,10 +23,17 @@ export default function Register() {
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role, name, specialization: role === "DOCTOR" ? specialization : undefined }),
-      });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    email,
+    password,
+    name,
+    role: "PATIENT" // 🔥 IMPORTANT (uppercase)
+  }),
+});
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Registration failed");
