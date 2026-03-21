@@ -30,20 +30,33 @@ const io = new Server(server, {
 });
 
 io.on('connection', (socket) => {
+
   socket.on('join-room', (roomId, userId) => {
     socket.join(roomId);
     socket.to(roomId).emit('user-connected', userId);
-
-    socket.on('message', (message) => {
-      io.to(roomId).emit('createMessage', message, userId);
-    });
-
-    socket.on('disconnect', () => {
-      socket.to(roomId).emit('user-disconnected', userId);
-    });
   });
-});
 
-server.listen(port, () => {
-  console.log(`Server is running on port ${port} with WebSockets`);
+  // 🔥 VIDEO CALL SIGNALING
+
+  socket.on('offer', (data) => {
+    socket.to(data.roomId).emit('offer', data);
+  });
+
+  socket.on('answer', (data) => {
+    socket.to(data.roomId).emit('answer', data);
+  });
+
+  socket.on('ice-candidate', (data) => {
+    socket.to(data.roomId).emit('ice-candidate', data);
+  });
+
+  // OPTIONAL CHAT
+  socket.on('message', (data) => {
+    io.to(data.roomId).emit('createMessage', data.message);
+  });
+
+  socket.on('disconnect', () => {
+    console.log("User disconnected");
+  });
+
 });
