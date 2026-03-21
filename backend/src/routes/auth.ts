@@ -1,11 +1,10 @@
-import { Router } from 'express';
-import { register, login, enableMfa } from '../controllers/authController';
-import { authenticate } from '../middleware/authMiddleware';
+import express from "express";
+import { registerUser, loginUser } from "../controllers/authController";
 
-const router = Router();
+const router = express.Router();
 
-router.post('/register', register);
-router.post('/login', login);
-router.post('/enable-mfa', authenticate, enableMfa);
+// ✅ CORRECT ROUTES
+router.post("/register", registerUser);
+router.post("/login", loginUser);
 
 export default router;
