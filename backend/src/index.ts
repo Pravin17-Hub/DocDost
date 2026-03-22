@@ -25,10 +25,10 @@ app.get('/', (req, res) => {
   res.send('DocDost API is running');
 });
 
-// 🔥 CREATE SERVER
+// SERVER
 const server = http.createServer(app);
 
-// 🔥 SOCKET.IO
+// SOCKET
 const io = new Server(server, {
   cors: {
     origin: "*",
@@ -39,21 +39,27 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
   console.log("User connected:", socket.id);
 
-  socket.on('join-room', (roomId, userId) => {
+  socket.on('join-room', (roomId) => {
     socket.join(roomId);
-    socket.to(roomId).emit('user-connected', userId);
+    socket.to(roomId).emit('user-connected');
   });
 
+  // 🔥 VIDEO SIGNALING
   socket.on('offer', (data) => {
-    socket.to(data.roomId).emit('offer', data);
+    socket.to(data.roomId).emit('offer', data.offer);
   });
 
   socket.on('answer', (data) => {
-    socket.to(data.roomId).emit('answer', data);
+    socket.to(data.roomId).emit('answer', data.answer);
   });
 
   socket.on('ice-candidate', (data) => {
-    socket.to(data.roomId).emit('ice-candidate', data);
+    socket.to(data.roomId).emit('ice-candidate', data.candidate);
+  });
+
+  // 🔥 CHAT
+  socket.on('send-message', (data) => {
+    io.to(data.roomId).emit('receive-message', data.message);
   });
 
   socket.on('disconnect', () => {
@@ -61,7 +67,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// 🔥 START SERVER
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });

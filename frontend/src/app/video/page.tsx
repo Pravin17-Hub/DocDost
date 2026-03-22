@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
 const socket = io(process.env.NEXT_PUBLIC_API_URL as string);
@@ -8,43 +8,43 @@ const socket = io(process.env.NEXT_PUBLIC_API_URL as string);
 export default function VideoPage() {
   const localVideo = useRef<HTMLVideoElement>(null);
   const remoteVideo = useRef<HTMLVideoElement>(null);
-
   const peer = useRef<RTCPeerConnection | null>(null);
 
-  const roomId = "docdost-room"; // same for both users
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<string[]>([]);
+
+  const roomId = "docdost-room";
 
   useEffect(() => {
-    const startCall = async () => {
-      // 🔥 Create peer connection
+    const start = async () => {
       peer.current = new RTCPeerConnection({
         iceServers: [
-          { urls: "stun:stun.l.google.com:19302" }
+          { urls: "stun:stun.l.google.com:19302" },
+          {
+            urls: "turn:relay.metered.ca:80",
+            username: "openai",
+            credential: "openai"
+          }
         ]
       });
 
-      // 🔥 Get camera
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: true,
+        audio: true
       });
 
-      if (localVideo.current) {
-        localVideo.current.srcObject = stream;
-      }
+      if (localVideo.current) localVideo.current.srcObject = stream;
 
-      // 🔥 Add tracks
       stream.getTracks().forEach(track => {
         peer.current?.addTrack(track, stream);
       });
 
-      // 🔥 Receive remote stream
       peer.current.ontrack = (event) => {
         if (remoteVideo.current) {
           remoteVideo.current.srcObject = event.streams[0];
         }
       };
 
-      // 🔥 ICE candidates
       peer.current.onicecandidate = (event) => {
         if (event.candidate) {
           socket.emit("ice-candidate", {
@@ -54,20 +54,18 @@ export default function VideoPage() {
         }
       };
 
-      // 🔥 Join room
-      socket.emit("join-room", roomId, "user");
+      socket.emit("join-room", roomId);
 
-      // 🔥 If new user joins → create offer
-      socket.on("user-connected", async () => {
+      // 🔥 FORCE OFFER (IMPORTANT)
+      setTimeout(async () => {
         const offer = await peer.current!.createOffer();
         await peer.current!.setLocalDescription(offer);
 
         socket.emit("offer", { offer, roomId });
-      });
+      }, 1000);
 
-      // 🔥 Receive offer
-      socket.on("offer", async (data) => {
-        await peer.current!.setRemoteDescription(data.offer);
+      socket.on("offer", async (offer) => {
+        await peer.current!.setRemoteDescription(offer);
 
         const answer = await peer.current!.createAnswer();
         await peer.current!.setLocalDescription(answer);
@@ -75,40 +73,68 @@ export default function VideoPage() {
         socket.emit("answer", { answer, roomId });
       });
 
-      // 🔥 Receive answer
-      socket.on("answer", async (data) => {
-        await peer.current!.setRemoteDescription(data.answer);
+      socket.on("answer", async (answer) => {
+        await peer.current!.setRemoteDescription(answer);
       });
 
-      // 🔥 Receive ICE
-      socket.on("ice-candidate", async (data) => {
+      socket.on("ice-candidate", async (candidate) => {
         try {
-          await peer.current!.addIceCandidate(data.candidate);
+          await peer.current!.addIceCandidate(candidate);
         } catch (err) {
           console.error(err);
         }
       });
+
+      // 🔥 CHAT RECEIVE
+      socket.on("receive-message", (msg) => {
+        setMessages(prev => [...prev, msg]);
+      });
     };
 
-    startCall();
+    start();
   }, []);
 
+  // 🔥 SEND MESSAGE
+  const sendMessage = () => {
+    if (!message) return;
+
+    socket.emit("send-message", {
+      roomId,
+      message
+    });
+
+    setMessages(prev => [...prev, message]);
+    setMessage("");
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+    <div className="flex flex-col items-center gap-4 p-6">
       <h1 className="text-xl font-bold">Video Call</h1>
 
-      <video
-        ref={localVideo}
-        autoPlay
-        muted
-        className="w-64 border"
-      />
+      <div className="flex gap-4">
+        <video ref={localVideo} autoPlay muted className="w-64 border" />
+        <video ref={remoteVideo} autoPlay className="w-64 border" />
+      </div>
 
-      <video
-        ref={remoteVideo}
-        autoPlay
-        className="w-64 border"
-      />
+      {/* CHAT */}
+      <div className="w-80 border p-3">
+        <div className="h-40 overflow-y-auto border mb-2 p-2">
+          {messages.map((m, i) => (
+            <div key={i}>{m}</div>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className="border flex-1 p-1"
+          />
+          <button onClick={sendMessage} className="bg-blue-500 text-white px-3">
+            Send
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
